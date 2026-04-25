@@ -111,12 +111,6 @@ After running the scripts:
 - `hist_N_fitted_model.pdf`: Point count distribution under fitted model
 - `metrics_table.tex`: LaTeX table for manuscript
 
-## Computational Notes
-
-- Simulations use parallel processing (10 cores by default, configurable)
-- Each LGCP simulation: ~0.5-2 seconds
-- Training set (15,000 valid sims): ~2-4 hours total
-- CNN training: ~15-30 minutes on GPU, ~2 hours on CPU
 
 
 
