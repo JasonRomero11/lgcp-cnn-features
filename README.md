@@ -118,19 +118,7 @@ After running the scripts:
 - Training set (15,000 valid sims): ~2-4 hours total
 - CNN training: ~15-30 minutes on GPU, ~2 hours on CPU
 
-## Citation
 
-If you use this code in your research, please cite:
-
-```bibtex
-@article{author2024lgcpcnn,
-  title={LGCP Parameter Recovery via CNN with Intensity Features},
-  author={Romero, Jason and others},
-  journal={Journal Name},
-  year={2024},
-  note={Submitted}
-}
-```
 
 ## License
 
