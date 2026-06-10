@@ -4,7 +4,7 @@
 
 The likelihood of a Log-Gaussian Cox Process (LGCP) has no closed form, as its evaluation requires marginalizing over a latent Gaussian field. Recent work replaces the likelihood with a convolutional neural network (CNN) trained on simulations, which predicts parameters from $\hat{L}(r)-r$ and point count $N$. Previously, this approach was tested only on square windows, and variance $\sigma^2$ and spatial range $s$ remain difficult to identify in practice. 
 
-This work augments the CNN with eight scalar descriptors of the smoothed intensity field: variance, index of dispersion, and range ratio computed on quadrat counts, together with variance, skewness, kurtosis, Shannon entropy, and coefficient of variation from kernel density estimation. The method is tested on a simulation study over Colombia's continental geometry and applied to the 2020 Colombian seismic catalogue. The descriptors improve $R^2$ for $s$ from 0.59 to 0.80 (+34.4%) and for $\sigma^2$ from 0.54 to 0.67 (+23.4%), without affecting the estimation of $\mu$ ($R^2 \approx 0.90$).
+This work augments the CNN with eight scalar descriptors of the smoothed intensity field: variance, index of dispersion, and range ratio computed on quadrat counts, together with variance, skewness, kurtosis, Shannon entropy, and coefficient of variation from kernel density estimation. The method is tested on a simulation study over Colombia's continental geometry and applied to the 2020 Colombian seismic catalogue. The descriptors raise $R^2$ for $s$ from 0.57 to 0.83 (+46.1%) and for $\sigma^2$ from 0.65 to 0.76 (+17.3%), with a moderate improvement for $\mu$ as well (0.81 to 0.88, +8.7%).
 
 ---
 
@@ -56,7 +56,7 @@ keras::install_keras()
 ### Step 1: Generate Training and Test Data
 ```r
 source("scripts/simulations_rGLCP.R")
-# Generates 15,000 training + 1,000 test simulations
+# Generates 15,000 training + 1,500 test simulations
 # Saves .rds files with LGCP parameters and computed features
 ```
 
@@ -85,14 +85,13 @@ source("scripts/CNN_train_and_predict.R")
 
 ## Results (Test Set)
 
-| Parameter | Model | R² | RMSE | MAE |
-|-----------|-------|-----|------|-----|
-| μ | Baseline | 0.907 | 0.095 | 0.068 |
-| μ | CNN+Features | 0.910 | 0.093 | 0.067 |
-| σ² | Baseline | 0.540 | 0.381 | 0.289 |
-| σ² | CNN+Features | **0.673** | 0.286 | 0.214 |
-| s | Baseline | 0.589 | 41542 | 29876 |
-| s | CNN+Features | **0.804** | 25894 | 17312 |
+$R^2$ by parameter (external test set, $n_{\text{test}} = 1{,}500$):
+
+| Parameter | Baseline CNN | CNN + I-feat | Improvement |
+|-----------|-------------:|-------------:|:-----------:|
+| μ  | 0.810 | **0.881** | +8.7%  |
+| σ² | 0.648 | **0.760** | +17.3% |
+| s  | 0.566 | **0.828** | +46.1% |
 
 ## Output Files
 
