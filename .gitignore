@@ -36,3 +36,5 @@ figures/*.tex
 # Temporary
 .tmp/
 temp/
+
+/Results_simulation_INI

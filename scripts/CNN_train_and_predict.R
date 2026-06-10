@@ -11,7 +11,9 @@
 library(keras)
 library(tidyverse)
 library(patchwork)
-
+library(spatstat)
+library(spatstat.geom)
+library(sf)
 set.seed(123)
 tensorflow::set_random_seed(123)
 
@@ -239,9 +241,9 @@ compute_metrics <- function(true_mat, pred_mat, model_name) {
 }
 
 metrics1 <- compute_metrics(test_par, pred1_std, "Baseline CNN")
-metrics2 <- compute_metrics(test_par, pred2_std, "CNN + Features")
+metrics2 <- compute_metrics(test_par, pred2_std, "CNN + I-feat")
 all_metrics <- bind_rows(metrics1, metrics2)
-
+models_order <- c("Baseline CNN", "CNN + I-feat")
 message("\nTest metrics (standardized scale):")
 print(all_metrics, n = Inf)
 
@@ -294,7 +296,7 @@ make_scatter_grid <- function(true_mat, pred_mat, model_name) {
   
   for (p in c("mu", "var", "scale")) {
     df  <- tibble(true = true_mat[, p], pred = pred_mat[, p])
-    r2  <- round(r2_ssr_sst(df$true, df$pred), 3)
+    r2  <- round(r2_score(df$true, df$pred), 3)
     rng <- range(c(df$true, df$pred))
     
     plots[[p]] <- ggplot(df, aes(true, pred)) +
@@ -419,7 +421,8 @@ cat("Loss and MAE plots saved\n")
 p_r2 <- ggplot(
   all_metrics %>%
     mutate(
-      param = factor(param, levels = c("mu", "var", "scale"),
+      param = factor(param,
+                     levels = c("mu", "var", "scale"),
                      labels = c("\u03bc", "\u03c3\u00b2", "s")),
       model = factor(model, levels = models_order)
     ),
@@ -428,17 +431,26 @@ p_r2 <- ggplot(
   geom_col(position = position_dodge(width = 0.7), width = 0.6) +
   geom_text(aes(label = sprintf("%.3f", R2)),
             position = position_dodge(width = 0.7),
-            vjust = -0.3, size = 4) +
-  scale_fill_manual(values = c("Baseline CNN"   = "grey65",
-                               "CNN + I-feat" = "darkorange")) +
+            vjust = -0.5, size = 3.8, fontface = "plain") +
+  scale_fill_manual(
+    values = c("Baseline CNN" = "grey65",
+               "CNN + I-feat" = "darkorange"),
+    breaks = c("Baseline CNN", "CNN + I-feat")
+  ) +
   labs(x = "Parameter", y = expression(R^2), fill = "Model") +
-  ylim(0, 1.08) +
-  theme_bw(base_size = 11) +
-  theme(panel.grid      = element_blank(),
-        legend.position = "bottom")
+  scale_y_continuous(limits = c(0, 1.05),
+                     breaks = seq(0, 0.9, by = 0.3)) +
+  theme_bw(base_size = 12) +
+  theme(panel.grid        = element_blank(),
+        panel.border      = element_blank(),
+        axis.line         = element_line(colour = "black"),
+        legend.position   = "bottom",
+        legend.title      = element_text(size = 11),
+        legend.text       = element_text(size = 11),
+        axis.text         = element_text(colour = "black"))
 
 ggsave(file.path(fig_dir, "r2_comparison_final.pdf"), p_r2,
-       width = 5, height = 4, device = cairo_pdf)
+       width = 6, height = 4.2, device = cairo_pdf)
 
 cat("R-squared comparison saved\n")
 cat("\nDone! All figures and table in:", fig_dir, "\n")
@@ -549,9 +561,9 @@ print(as.data.frame(feats_obs))
 # =============================================================================
 # 3. NORMALIZE AND PREDICT
 # =============================================================================
-# NOTE: this block requires m_L, sd_L, m_N, sd_N, m_featI, sd_featI,
+# NOTE: this block requires m_L, sd_L, m_N, sd_N, m_feat, sd_feat,
 #       m_par, sd_par, model1, model2 to be in the environment
-#       (run CNN_results_final.R first)
+#       (computed in the normalization step at the top of this script)
 
 cat("\n===== Prediction with trained models =====\n")
 
@@ -565,9 +577,9 @@ obs_L <- array(
 obs_N <- matrix((N_obs - m_N) / sd_N, nrow = 1)
 
 # --- Normalize features ---
-feat_vec <- unlist(feats_obs)
+feat_vec <- unlist(feats_obs)[feat_cols]
 obs_featI <- matrix(
-  (feat_vec - m_featI) / sd_featI,
+  (feat_vec - m_feat) / sd_feat,
   nrow = 1
 )
 
@@ -741,16 +753,24 @@ ggsave(file.path(fig_dir, "envelope_fitted_model.pdf"), p_envelope,
        width = 7, height = 4.5, device = cairo_pdf)
 
 # --- 6b. Histogram of simulated N vs observed ---
+# Recortar la visualización al rango razonable (p2-p98) para que la cola
+# extrema no domine el eje X
+N_lim <- quantile(N_sims, c(0.02, 0.98))
+
 p_N <- ggplot(tibble(N = N_sims), aes(x = N)) +
-  geom_histogram(bins = 30, fill = "steelblue", alpha = 0.6, colour = "white") +
+  geom_histogram(bins = 40, fill = "steelblue", alpha = 0.6, colour = "white") +
   geom_vline(xintercept = N_obs, colour = "red", linewidth = 1, linetype = "dashed") +
   annotate("text", x = N_obs, y = Inf, label = paste("Observed N =", N_obs),
            vjust = 2, hjust = -0.1, colour = "red", size = 3.5) +
+  coord_cartesian(xlim = N_lim) +     # zoom al rango central
   labs(x = "N (number of points)", y = "Frequency",
-       title = "Distribution of N under the fitted model") +
+       title = "Distribution of N under the fitted model",
+       subtitle = sprintf("(zoomed to p2-p98; max = %d)", max(N_sims))) +
   theme_bw(base_size = 11) +
   theme(panel.grid.minor = element_blank(),
-        plot.title = element_text(hjust = 0.5, size = 10))
+        plot.title    = element_text(hjust = 0.5, size = 10),
+        plot.subtitle = element_text(hjust = 0.5, size = 9, colour = "grey40"))
+
 
 ggsave(file.path(fig_dir, "hist_N_fitted_model.pdf"), p_N,
        width = 5, height = 4, device = cairo_pdf)
@@ -798,6 +818,7 @@ plot_pp <- function(pp, title_text) {
 p_obs  <- plot_pp(pSismos, paste0("Observed (N=", N_obs, ")"))
 p_sim1 <- plot_pp(sims_val[[1]], paste0("Sim. 1 (N=", npoints(sims_val[[1]]), ")"))
 p_sim2 <- plot_pp(sims_val[[2]], paste0("Sim. 2 (N=", npoints(sims_val[[2]]), ")"))
+
 
 p_visual <- p_obs | p_sim1 | p_sim2
 ggsave(file.path(fig_dir, "visual_comparison_fit.pdf"), p_visual,

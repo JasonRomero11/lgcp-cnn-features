@@ -11,7 +11,7 @@ library(sf)
 
 setwd("~/Documents/Personal/paper_lgcp_features")
 set.seed(123)
-N_CORES <- 10
+N_CORES <- 6
 # Load spatial window
 shapeZona_sp <- readRDS("data/shapeZona_sp.rds")
 r_iso_owin <- as.owin(shapeZona_sp)
@@ -19,17 +19,53 @@ area_win <- area.owin(r_iso_owin)
 message(sprintf("Window area: %.2e m²", area_win))
 
 
-# Generate parameters
+# =============================================================================
+# Parameter sampling — calibrated to Colombian seismicity 2020
+#
+# Design notes:
+#   * mu is NOT sampled directly. Instead we sample E[N] log-uniformly in
+#     (N_min, N_max) and back-compute mu = log(E[N]/|W|) - var/2.
+#     This guarantees uniform coverage of densities across orders of magnitude
+#     and avoids the boundary bias seen in the previous training run.
+#   * var and scale ranges are widened so that no parameter estimated by
+#     the CNN can sit at the boundary of the training support.
+# =============================================================================
+
 N_TRAIN <- 15000
+
+# Ranges
+N_min     <- 500       # smallest expected count
+N_max     <- 60000     # largest  expected count
+var_min   <- 0.5
+var_max   <- 6.0
+scale_min <- 20000     # 20 km
+scale_max <- 300000    # 300 km
+
 set.seed(42)
+log_N_expected <- runif(N_TRAIN, log(N_min), log(N_max))
+N_expected     <- exp(log_N_expected)
+var            <- runif(N_TRAIN, var_min,   var_max)
+scale          <- runif(N_TRAIN, scale_min, scale_max)
+mu             <- log(N_expected / area_win) - var / 2
 
-mu    <- runif(N_TRAIN, -19.5, -18.5)
-var   <- runif(N_TRAIN, 1.0, 3.0)
-scale <- runif(N_TRAIN, 80000, 200000)
+# -------- Sanity checks (training) ------------------------------------------
+message("\n===== TRAINING PARAMETER RANGES =====")
+message(sprintf("  mu          : [%7.3f , %7.3f]", min(mu),    max(mu)))
+message(sprintf("  var         : [%7.3f , %7.3f]", min(var),   max(var)))
+message(sprintf("  scale (km)  : [%7.1f , %7.1f]", min(scale)/1000, max(scale)/1000))
+message(sprintf("  E[N]        : [%7.0f , %7.0f]", min(N_expected), max(N_expected)))
 
-N_expected <- area_win * exp(mu + var / 2)
-message(sprintf("mu: %.3f to %.3f | var: %.3f to %.3f | scale: %.0f to %.0f m",
-                min(mu), max(mu), min(var), max(var), min(scale), max(scale)))
+N_obs     <- 14346
+log_N_obs <- log(N_obs)
+pct_obs   <- mean(log_N_expected <= log_N_obs) * 100
+message(sprintf("\n  N_obs = %d (log = %.2f) -> percentile %.1f%% of log E[N]",
+                N_obs, log_N_obs, pct_obs))
+message("  (Ideally 30-70%; 10-90% is acceptable.)")
+
+if (pct_obs < 5 || pct_obs > 95) {
+  stop(sprintf("Observed at percentile %.1f%% -- adjust N_min/N_max before simulating.",
+               pct_obs))
+}
 
 # Global parameters
 RMAX <- 200000
@@ -182,13 +218,23 @@ for (k in seq_len(n_chunks_train)) {
 message(sprintf("\nTraining completed: %d simulations saved\n", total_valid_train))
 
 
-# Test simulations
-set.seed(1234)
-N_TEST <- 1000
+# =============================================================================
+# Test set — SAME sampling scheme as training (independent seed)
+# =============================================================================
+N_TEST <- 1500
 
-mu_test    <- runif(N_TEST, -19.5, -18.5)
-var_test   <- runif(N_TEST, 1.0, 3.0)
-scale_test <- runif(N_TEST, 80000, 200000)
+set.seed(1234)
+log_N_expected_test <- runif(N_TEST, log(N_min), log(N_max))
+N_expected_test     <- exp(log_N_expected_test)
+var_test            <- runif(N_TEST, var_min,   var_max)
+scale_test          <- runif(N_TEST, scale_min, scale_max)
+mu_test             <- log(N_expected_test / area_win) - var_test / 2
+
+message("\n===== TEST PARAMETER RANGES =====")
+message(sprintf("  mu          : [%7.3f , %7.3f]", min(mu_test),    max(mu_test)))
+message(sprintf("  var         : [%7.3f , %7.3f]", min(var_test),   max(var_test)))
+message(sprintf("  scale (km)  : [%7.1f , %7.1f]", min(scale_test)/1000, max(scale_test)/1000))
+message(sprintf("  E[N]        : [%7.0f , %7.0f]", min(N_expected_test), max(N_expected_test)))
 
 n_chunks_test <- ceiling(N_TEST / CHUNK_SIZE)
 total_valid_test <- 0
