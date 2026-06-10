@@ -115,7 +115,21 @@ After running the scripts:
 
 ## License
 
-[Specify your license, e.g., MIT, GPL-3.0]
+This repository uses a dual license:
+
+- **Code** (`scripts/`) — [MIT License](LICENSE). You may reuse, modify, and
+  redistribute the code freely, provided you keep the copyright notice.
+- **Paper, figures, and data** (`paper.tex`, `paper_en.tex`, `figs/`, `data/`,
+  `Results_simulation/`) — [CC BY 4.0](LICENSE-PAPER). You may share and adapt
+  the material, including commercially, **as long as you give appropriate
+  credit** (see *How to cite* below).
+
+## How to cite
+
+If you use this code, data, or results, please cite:
+
+> Romero, J. (2026). *LGCP Parameter Recovery via CNN with Intensity Features.*
+> https://github.com/JasonRomero11/lgcp-cnn-features
 
 ## Contact
 
