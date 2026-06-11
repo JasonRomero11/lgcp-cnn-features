@@ -1,0 +1,48 @@
+# Data and results (but include .rds files)
+*.RData
+*.rda
+
+# Python/R cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.RData
+.Rhistory
+.Rapp.history
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Figures and temporary files
+figures/*.pdf
+figures/*.png
+figures/*.tex
+*.log
+*.aux
+*.out
+
+# Large model files
+*.h5
+*.keras
+*.pt
+*.pth
+
+# Temporary
+.tmp/
+temp/
+
+# Manuscript / LaTeX sources (kept private until publication)
+*.tex
+*.bib
+*.bst
+*.sty
+*.cls
+figs/
+supplementaryMaterial.zip
+*.zip
