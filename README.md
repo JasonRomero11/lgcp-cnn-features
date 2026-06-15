@@ -6,6 +6,8 @@ The likelihood of a Log-Gaussian Cox Process (LGCP) has no closed form, as its e
 
 This work augments the CNN with eight scalar descriptors of the smoothed intensity field: variance, index of dispersion, and range ratio computed on quadrat counts, together with variance, skewness, kurtosis, Shannon entropy, and coefficient of variation from kernel density estimation. The method is tested on a simulation study over Colombia's continental geometry and applied to the 2020 Colombian seismic catalogue. The descriptors improve $R^2$ for $s$ from 0.59 to 0.80 (+34.4%) and for $\sigma^2$ from 0.54 to 0.67 (+23.4%), without affecting the estimation of $\mu$ ($R^2 \approx 0.90$).
 
+> **Status:** The associated manuscript has been submitted to the journal *Computers & Geosciences* for review.
+
 ---
 
 ## Project Structure
