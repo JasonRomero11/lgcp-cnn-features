@@ -46,3 +46,4 @@ temp/
 figs/
 supplementaryMaterial.zip
 *.zip
+/Results_simulation_INI
