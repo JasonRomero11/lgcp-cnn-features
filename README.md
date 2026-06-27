@@ -14,7 +14,7 @@ This work augments the CNN with eight scalar descriptors of the smoothed intensi
 
 For each simulated realisation, the LGCP parameters $(\mu, \sigma^2, s)$ are sampled, a point pattern $\mathbf{x}$ is generated with `rLGCP` (spatstat) on the continental window $W$ of Colombia using a Matérn covariance ($\nu=1$), the centred $L$ function $D(r)=\hat{L}(r)-r$ is estimated with border edge correction, and the eight intensity descriptors $\mathbf{f}=\Phi(\mathbf{x})\in\mathbb{R}^{8}$ are extracted from quadrat counts and a kernel density estimate. Each training example stores $\boldsymbol{\theta}=(\mu,\sigma^2,s)$ as the label and $(D(r),\,N,\,\mathbf{f})$ as the input.
 
-![Simulation and feature-extraction pipeline](images/methodology_pipeline.png)
+![Simulation and feature-extraction pipeline](images/diagrammethodology.png)
 
 ## CNN Architecture
 
@@ -118,7 +118,6 @@ After running the scripts, results are written to the figures directory:
 - Training/validation loss curves
 - $R^2$ comparison by parameter
 - $L(r)$ envelope and point-count validation under the fitted model
-- LaTeX tables for the manuscript
 
 ## License
 
